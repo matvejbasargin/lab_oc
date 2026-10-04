@@ -19,7 +19,7 @@ static bool write_all(int fd, const std::string& s) {
     return true;
 }
 
-// разбор строки в числа типа int; false при некорректном вводе
+
 static bool parse(const std::string& s, std::vector<int>& out) {
     out.clear();
     size_t i = 0, n = s.size();
@@ -37,7 +37,7 @@ static bool parse(const std::string& s, std::vector<int>& out) {
         long long v = 0;
         while (i < n && s[i] >= '0' && s[i] <= '9') {
             v = v * 10 + (s[i] - '0');
-            if (v > 2147483648LL) return false; // выход за int
+            if (v > 2147483648LL) return false; 
             i++;
         }
         if (i < n && s[i] != ' ' && s[i] != '\t' && s[i] != '\r') return false;
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
             close(fd);
             return 1;
         }
-        if (n == 0) break; // родитель закрыл pipe1
+        if (n == 0) break; 
         pending.append(buf, n);
 
         size_t pos;
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            // делим первое число на последующие
+            
             long long result = nums[0];
             bool zero = false;
             for (size_t i = 1; i < nums.size(); i++) {
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (zero) {
-                write_all(STDOUT_FILENO, "z"); // сообщаем родителю
+                write_all(STDOUT_FILENO, "z"); 
                 close(fd);
                 return 0;
             }
