@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #define SHM_SIZE 4096
-#define MSG_EXIT UINT32_MAX   // значение len = "родитель закончил работу"
+#define MSG_EXIT UINT32_MAX   
 
 struct SharedData {
     uint32_t len;                                   
