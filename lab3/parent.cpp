@@ -1,7 +1,3 @@
-// g++ -o child child.cpp -pthread -lrt
-// g++ -o parent parent.cpp -pthread -lrt
-// ./parent
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -17,11 +13,10 @@
 #define SHM_SIZE 4096
 #define MSG_EXIT UINT32_MAX   // значение len = "родитель закончил работу"
 
-// Раскладка общей памяти (должна быть одинакова в parent.cpp и child.cpp)
 struct SharedData {
-    uint32_t len;                                   // длина строки в data; MSG_EXIT = выход
-    char     status;                                // ответ ребёнка: 'k' / 'e' / 'z'
-    char     data[SHM_SIZE - sizeof(uint32_t) - 1]; // строка с числами
+    uint32_t len;                                   
+    char     status;                                
+    char     data[SHM_SIZE - sizeof(uint32_t) - 1]; 
 };
 
 static_assert(sizeof(SharedData) <= SHM_SIZE, "SharedData не помещается в SHM_SIZE");
@@ -65,8 +60,6 @@ static std::string self_dir() {
     return std::string(path);
 }
 
-// Ждём ответ ребёнка (sem_post от него), но раз в 100 мс проверяем, жив ли он.
-// 0 - дождались; -1 - ребёнок завершился; -2 - ошибка семафора
 static int wait_reply(sem_t* sem, pid_t pid, bool& exited) {
     while (true) {
         timespec ts;
@@ -98,11 +91,11 @@ int main() {
         return 1;
     }
 
-    // Уникальные имена для каждой пары parent/child: добавляем pid родителя
+    
     std::string suffix  = std::to_string(getpid());
     std::string shmName = "/lab3_shm_" + suffix;
-    std::string semCmd  = "/lab3_cmd_" + suffix;   // parent -> child: "строка готова"
-    std::string semResp = "/lab3_rsp_" + suffix;   // child -> parent: "ответ готов"
+    std::string semCmd  = "/lab3_cmd_" + suffix;   
+    std::string semResp = "/lab3_rsp_" + suffix;   
     std::string childPath = self_dir() + "/child";
 
     int shm = shm_open(shmName.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
@@ -127,7 +120,7 @@ int main() {
     sh->len = 0;
     sh->status = 0;
 
-    // Оба семафора стартуют с 0: "события ещё не было"
+    
     sem_t* cmd  = sem_open(semCmd.c_str(),  O_CREAT | O_EXCL, 0600, 0);
     sem_t* resp = sem_open(semResp.c_str(), O_CREAT | O_EXCL, 0600, 0);
 
@@ -173,12 +166,11 @@ int main() {
             continue;
         }
 
-        // кладём строку в shared memory и будим ребёнка
+        
         for (size_t i = 0; i < line.size(); i++) sh->data[i] = line[i];
         sh->len = (uint32_t)line.size();
         sem_post(cmd);
 
-        // ждём ответ
         int r = wait_reply(resp, pid, exited);
         if (r != 0) {
             print(STDERR_FILENO, "Дочерний процесс неожиданно завершился\n");
@@ -194,7 +186,7 @@ int main() {
         }
     }
 
-    // сообщаем ребёнку о выходе (если он ещё жив) и ждём его
+    
     if (!exited) {
         sh->len = MSG_EXIT;
         sem_post(cmd);
