@@ -1,6 +1,3 @@
-// g++ -o child child.cpp -pthread -lrt
-// Запускается родителем: ./child <файл> <shm> <sem_cmd> <sem_resp>
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -14,11 +11,10 @@
 #define SHM_SIZE 4096
 #define MSG_EXIT UINT32_MAX   // значение len = "родитель закончил работу"
 
-// Раскладка общей памяти (должна быть одинакова в parent.cpp и child.cpp)
 struct SharedData {
-    uint32_t len;                                   // длина строки в data; MSG_EXIT = выход
-    char     status;                                // ответ ребёнка: 'k' / 'e' / 'z'
-    char     data[SHM_SIZE - sizeof(uint32_t) - 1]; // строка с числами
+    uint32_t len;                                   
+    char     status;                                
+    char     data[SHM_SIZE - sizeof(uint32_t) - 1]; 
 };
 
 static_assert(sizeof(SharedData) <= SHM_SIZE, "SharedData не помещается в SHM_SIZE");
@@ -38,7 +34,6 @@ static bool write_all(int fd, const std::string& s) {
     return true;
 }
 
-// разбор строки в числа типа int; false при некорректном вводе
 static bool parse(const std::string& s, std::vector<int>& out) {
     out.clear();
     size_t i = 0, n = s.size();
@@ -107,7 +102,6 @@ int main(int argc, char* argv[]) {
     std::vector<int> nums;
 
     while (true) {
-        // ждём, пока родитель положит строку
         if (sem_wait(cmd) == -1) {
             if (errno == EINTR) continue;
             write_all(STDERR_FILENO, "child: ошибка sem_wait\n");
@@ -115,7 +109,7 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        if (sh->len == MSG_EXIT) break;   // родитель закончил
+        if (sh->len == MSG_EXIT) break;   
 
         std::string line(sh->data, sh->len);
         if (!line.empty() && line.back() == '\n') line.pop_back();
@@ -126,7 +120,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        // делим первое число на последующие
+        
         long long result = nums[0];
         bool zero = false;
         for (size_t i = 1; i < nums.size(); i++) {
@@ -137,13 +131,13 @@ int main(int argc, char* argv[]) {
         if (zero) {
             sh->status = 'z';
             sem_post(resp);
-            break;                        // завершаемся
+            break;                        
         }
 
         if (!write_all(fd, std::to_string(result) + "\n")) {
             write_all(STDERR_FILENO, "child: ошибка записи в файл\n");
             code = 1;
-            break;                        // родитель увидит, что ребёнок умер
+            break;                        
         }
         sh->status = 'k';
         sem_post(resp);
